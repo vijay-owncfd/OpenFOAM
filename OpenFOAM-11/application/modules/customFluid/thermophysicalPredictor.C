@@ -31,9 +31,10 @@ License
 
 void Foam::solvers::customFluid::thermophysicalPredictor()
 {
-    Info << "Solving energy in customFluid" << endl;
     volScalarField& he = thermo_.he();
 
+/*
+    // Keeping it here, just for reference
     fvScalarMatrix EEqn
     (
         fvm::ddt(rho, he) + fvm::div(phi, he)
@@ -52,6 +53,45 @@ void Foam::solvers::customFluid::thermophysicalPredictor()
           : fvModels().source(rho, he)
         )
     );
+*/
+
+    fvScalarMatrix EEqn
+    (
+        fvm::ddt(rho, he) + fvm::div(phi, he, "div(phi,he)")
+      ==
+      - thermophysicalTransport->divq(he)
+      + fvModels().source(rho, he)
+    );
+
+    if(energySolverMode_ == "Static")
+    {
+        if(he.name() == "h")
+        {
+            EEqn -= (dpdt + (fvc::grad(p) & U)());
+        } 
+        else
+        {
+            EEqn -= (-p * fvc::div(phi, 1/rho)());     // In future, calculate this in the pressure equation
+        }  
+    }
+    else
+    {
+        EEqn += (fvc::ddt(rho, K) + fvc::div(phi, K));
+
+        if(buoyancy.valid())
+        {
+            EEqn -= rho*(U & buoyancy->g);
+        }
+   
+        if(he.name() == "h")
+        {
+            EEqn -= dpdt;
+        }
+        else
+        {
+            EEqn -= -fvc::div(phi, p/rho)();
+        }
+    }
 
     EEqn.relax();
 

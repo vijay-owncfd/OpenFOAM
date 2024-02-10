@@ -77,6 +77,8 @@ protected:
         autoPtr<fluidThermoThermophysicalTransportModel>
             thermophysicalTransport;
 
+    const word energySolverMode_;
+
 
 public:
 

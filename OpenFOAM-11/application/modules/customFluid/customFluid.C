@@ -51,9 +51,39 @@ Foam::solvers::customFluid::customFluid(fvMesh& mesh)
             momentumTransport(),
             thermo
         )
-    )
+    ),
+    
+    energySolverMode_(pimple.dict().lookupOrDefault<word>("energySolverMode", "Total"))
 {
     thermo.validate(type(), "h", "e");
+
+    if(energySolverMode_ == "Total")
+    {
+        if(thermo.he().name() == "e")
+        {
+            Info << "Total internal energy equation will be solved." << endl;
+        }
+        else
+        {
+            Info << "Total enthalpy equation will be solved." << endl;
+        }
+    }
+    else if(energySolverMode_ == "Static")
+    {
+        if(thermo.he().name() == "e")
+        {
+            Info << "Static internal equation will be solved." << endl;
+        }
+        else
+        {
+            Info << "Static enthalpy equation will be solved." << endl;
+        }
+    }
+    else
+    {
+        FatalErrorInFunction << "In PIMPLE dict, energySolverMode can be set "
+            << "to either Total or Static only." << exit(FatalError);
+    }
 }
 
 
